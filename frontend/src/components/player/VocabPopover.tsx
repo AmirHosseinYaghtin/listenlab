@@ -42,7 +42,7 @@ interface Props {
 
 export default function VocabPopover({ entry, state, onClose, onHoverChange }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
-  const [lang, setLang] = useState<'fa' | 'en'>(entry.persianMeaning ? 'fa' : 'en')
+  const [lang, setLang] = useState<'fa' | 'en'>(entry.englishMeaning ? 'en' : 'fa')
   const [pos, setPos] = useState(() => computePosition(state.anchor, ESTIMATED_HEIGHT))
 
   const usesTouch =

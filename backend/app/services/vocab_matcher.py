@@ -15,6 +15,12 @@ Matching strategy:
   * common English inflections for each content word (plural, -ed, -ing,
     -es, consonant doubling, e-drop) using a small, extensible ruleset
   * longest expression wins when candidates overlap
+  * the Base Form column is honoured as an alternate surface form only when
+    it has at least as many tokens as the expression, so a component word
+    (base "will" of "sheer force of will") never matches standalone
+  * all primary word patterns are attempted before any base-form alternate,
+    so a dedicated entry always wins over another entry's base variant
+    ("stereotype" beats the base variant of "stereotypically")
 """
 from __future__ import annotations
 
@@ -85,30 +91,53 @@ def _alternation(word: str) -> str:
     return "(?:" + "|".join(re.escape(f) for f in forms) + ")"
 
 
+def _strip_expression(expression: str) -> str:
+    """Trim whitespace and wrapping punctuation, keep internal hyphens."""
+    return expression.strip().strip(".,;:!?\"'“”‘’()[]{}…")
+
+
+def _token_pattern(expression: str) -> str | None:
+    """Inflection-aware pattern for a whitespace-split expression."""
+    tokens = expression.split()
+    if not tokens:
+        return None
+    return r"\s+".join(_alternation(tok) for tok in tokens)
+
+
+def _alternate_base_pattern(word: str, base_form: str | None) -> str | None:
+    """Base Form as an alternate surface form of the same expression.
+
+    Only kept when the base form has at least as many tokens as the
+    expression: a component/headword base ("will" of "sheer force of will",
+    "part" of "part on bad terms") must never become a standalone match.
+    """
+    if not base_form:
+        return None
+    expr = _strip_expression(word)
+    base = _strip_expression(base_form)
+    if not expr or not base or base.casefold() == expr.casefold():
+        return None
+    if len(base.split()) < len(expr.split()):
+        return None
+    expr_pat = _token_pattern(expr)
+    base_pat = _token_pattern(base)
+    if not base_pat or base_pat == expr_pat:
+        return None
+    return base_pat
+
+
 def expression_pattern(expression: str, base_form: str | None = None) -> str:
     """Build a regex fragment for a word/phrase (plus optional base form)."""
-    expr = expression.strip()
-    # strip wrapping punctuation but keep internal hyphens/apostrophes
-    expr = expr.strip(".,;:!?\"'“”‘’()[]{}…")
+    expr = _strip_expression(expression)
     if not expr:
         return ""
-
-    variants: list[str] = []
-    for candidate in (expr, base_form.strip() if base_form else None):
-        if not candidate:
-            continue
-        tokens = candidate.split()
-        if not tokens:
-            continue
-        parts = [_alternation(tok) for tok in tokens]
-        pattern = r"\s+".join(parts)
-        if pattern not in variants:
-            variants.append(pattern)
-    if not variants:
+    expr_pat = _token_pattern(expr)
+    if not expr_pat:
         return re.escape(expr)
-    if len(variants) == 1:
-        return variants[0]
-    return "(?:" + "|".join(variants) + ")"
+    base_pat = _alternate_base_pattern(expr, base_form)
+    if not base_pat:
+        return expr_pat
+    return f"(?:{expr_pat}|{base_pat})"
 
 
 # word characters that must not surround a match
@@ -140,15 +169,28 @@ def compile_matcher(vocab: Iterable[dict]) -> tuple[re.Pattern | None, list[dict
 
     # longest expression first => longest-match-wins at each position
     ordered = sorted(entries, key=lambda e: len(e["word"]), reverse=True)
-    alternatives = []
+    primary_alternatives: list[str] = []
+    base_alternatives: list[str] = []
     for e in ordered:
-        pat = expression_pattern(e["word"], e.get("baseForm"))
-        if not pat:
+        expr = _strip_expression(e["word"])
+        primary = _token_pattern(expr)
+        if not primary:
             continue
-        alternatives.append(f"(?P<v{e['index']}>{_BOUNDARY}{pat}{_BOUNDARY_END})")
-    if not alternatives:
+        primary_alternatives.append(
+            f"(?P<v{e['index']}>{_BOUNDARY}{primary}{_BOUNDARY_END})"
+        )
+        base_pat = _alternate_base_pattern(e["word"], e.get("baseForm"))
+        if base_pat:
+            base_alternatives.append(
+                f"(?P<b{e['index']}>{_BOUNDARY}{base_pat}{_BOUNDARY_END})"
+            )
+    if not primary_alternatives:
         return None, []
-    regex = re.compile("|".join(alternatives), re.IGNORECASE)
+    # Primaries first: a dedicated entry always wins over another entry's
+    # base-form variant at the same position. Base alternates keep their own
+    # longest-first order.
+    base_alternatives.reverse()
+    regex = re.compile("|".join(primary_alternatives + base_alternatives), re.IGNORECASE)
     return regex, ordered
 
 

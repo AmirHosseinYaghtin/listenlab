@@ -193,3 +193,84 @@ class TestExpressionPattern:
         import re
         pat = expression_pattern('"deploy,"')
         assert re.fullmatch(pat, "deploy", re.IGNORECASE)
+
+
+# ---------------------------------------------------------------------------
+# base-form safety: component bases and sibling-entry shadowing
+# ---------------------------------------------------------------------------
+
+class TestBaseFormSafety:
+    def test_component_base_form_not_matched_alone(self):
+        entries = [{"id": "v0", "word": "sheer force of will", "baseForm": "will"}]
+        regex, ordered = compile_matcher(entries)
+        assert annotate_text("I will go there.", regex, ordered) == [{"t": "I will go there."}]
+        parts = annotate_text("It took sheer force of will.", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_part_on_bad_terms_does_not_match_bare_part(self):
+        entries = [{"id": "v0", "word": "part on bad terms", "baseForm": "part"}]
+        regex, ordered = compile_matcher(entries)
+        assert annotate_text("What part is it?", regex, ordered) == [{"t": "What part is it?"}]
+        parts = annotate_text("an ex manager who parted on bad terms", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_equal_arity_base_variant_matches(self):
+        entries = [{"id": "v0", "word": "Whois record", "baseForm": "who is record"}]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("We looked up the Who is record.", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_digit_hyphen_base_variant_matches(self):
+        entries = [{"id": "v0", "word": "1-800 number", "baseForm": "1800 number"}]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("I got a call from a 1800 number.", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_longer_base_variant_matches(self):
+        entries = [{"id": "v0", "word": "stake out", "baseForm": "stake it out"}]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("we decided to stake it out", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_space_variant_base_matches_hyphenated_entry(self):
+        entries = [{"id": "v0", "word": "chock-full", "baseForm": "chock full"}]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("after a day chock full of disappointments", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_dedicated_entry_wins_over_sibling_base_variant(self):
+        entries = [
+            {"id": "v0", "word": "stereotypically", "baseForm": "stereotype"},
+            {"id": "v1", "word": "stereotype", "baseForm": "stereotype"},
+        ]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("That's a stereotype; it is stereotypically true.", regex, ordered)
+        flagged = [(p["t"], p["v"]) for p in parts if p.get("v")]
+        assert ("stereotype", "v1") in flagged
+        assert ("stereotypically", "v0") in flagged
+
+    def test_confront_not_stolen_by_confrontation_base(self):
+        entries = [
+            {"id": "v0", "word": "confrontation", "baseForm": "confront"},
+            {"id": "v1", "word": "confront", "baseForm": "confront"},
+        ]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("confronting these guys is useless", regex, ordered)
+        assert any(p.get("v") == "v1" for p in parts)
+
+    def test_shorter_sibling_base_ignored(self):
+        entries = [
+            {"id": "v0", "word": "sales commission", "baseForm": "commission"},
+            {"id": "v1", "word": "commission", "baseForm": "commission"},
+        ]
+        regex, ordered = compile_matcher(entries)
+        parts = annotate_text("the commission is paid monthly", regex, ordered)
+        assert any(p.get("v") == "v1" for p in parts)
+        parts = annotate_text("sales commissions are paid monthly", regex, ordered)
+        assert any(p.get("v") == "v0" for p in parts)
+
+    def test_expression_pattern_component_base_rejected(self):
+        import re
+        pat = expression_pattern("sheer force of will", "will")
+        assert re.fullmatch(pat, "sheer force of will", re.IGNORECASE)
+        assert not re.fullmatch(pat, "will", re.IGNORECASE)

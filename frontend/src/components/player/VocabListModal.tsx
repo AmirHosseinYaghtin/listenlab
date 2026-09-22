@@ -12,7 +12,7 @@ export default function VocabListModal({
   onClose: () => void
 }) {
   const [lang, setLang] = useState<'fa' | 'en'>(
-    vocabulary.some((v) => v.persianMeaning) ? 'fa' : 'en',
+    vocabulary.some((v) => v.englishMeaning) ? 'en' : 'fa',
   )
 
   useEffect(() => {
