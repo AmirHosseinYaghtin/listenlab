@@ -1,0 +1,28 @@
+{
+  "podcasts": [
+    {
+      "sourceKey": "reply-all-102-long-distance-pt1",
+      "title": "Reply All #102 — Long Distance (Part 1)",
+      "description": "Alex Goldman investigates a tech-support scam that called his own phone. Episode 1 of the two-part 'Long Distance' story.",
+      "audio": "datasets/102-GLT1346255265.mp3",
+      "subtitles": "datasets/102_ReplyAll_LongDistance_Pt1_Transcript.docx",
+      "vocabulary": "datasets/102_ReplyAll_LongDistance_Pt1_Vocab.xlsx"
+    },
+    {
+      "sourceKey": "reply-all-103-long-distance-pt2",
+      "title": "Reply All #103 — Landing in Delhi",
+      "description": "The search continues in Delhi: the elusive search for the people behind the call centre. Episode 2 of the two-part 'Long Distance' story.",
+      "audio": "datasets/103-GLT7017673177.mp3",
+      "subtitles": "datasets/103_ReplyAll_LongDistance_Pt2_Transcript.pdf",
+      "vocabulary": "datasets/103_ReplyAll_LongDistance_Pt2_Vocab.xlsx"
+    },
+    {
+      "sourceKey": "reply-all-164-the-real-alex-martin",
+      "title": "Reply All #164 — The Real Alex Martin",
+      "description": "Years later, the story of the 'Long Distance' scam and the real identity of Alex Martin is unravelled.",
+      "audio": "datasets/164 Long Distance The Real Alex Martin.mp3",
+      "subtitles": "datasets/164_ReplyAll_LongDistance_TheRealAlexMartin_Transcript.pdf",
+      "vocabulary": "datasets/164_ReplyAll_LongDistance_TheRealAlexMartin_Vocab.xlsx"
+    }
+  ]
+}

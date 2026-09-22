@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+frontend/node_modules/
+
+# builds
+frontend/dist/
+*.tsbuildinfo
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# app data (created at runtime; safe to delete to reset)
+backend/data/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
