@@ -206,7 +206,7 @@ export default function PlayerPage() {
   const popoverEntry = popover ? vocabById.get(popover.entryId) : null
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {/* header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -257,13 +257,13 @@ export default function PlayerPage() {
       )}
 
       {/* player card */}
-      <section className="card p-4 sm:p-5" aria-label="Podcast player">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="hidden size-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
+      <section className="card p-3 sm:p-4" aria-label="Podcast player">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="hidden size-12 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
             {podcast.coverUrl ? (
               <img src={podcast.coverUrl} alt="" className="size-full object-cover" />
             ) : (
-              <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-700 to-slate-800 text-lg font-bold text-white/90">
+              <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-700 to-slate-800 text-base font-bold text-white/90">
                 {podcast.title.charAt(0)}
               </div>
             )}
@@ -273,15 +273,10 @@ export default function PlayerPage() {
             <p className="mt-0.5 truncate text-xs text-slate-500">
               {activeSegment ? `Line ${activeIndex + 1} of ${segments.length}` : 'Press play to start'}
             </p>
-            {activeSegment && (
-              <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-slate-600" lang="en">
-                {activeSegment.text}
-              </p>
-            )}
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3">
           <AudioControls
             state={state}
             onToggle={actions.toggle}
@@ -307,7 +302,7 @@ export default function PlayerPage() {
       </section>
 
       {/* transcript */}
-      <div className="flex min-h-[55vh] flex-1 flex-col lg:min-h-[60vh]">
+      <div className="flex h-[70vh] min-h-[380px] flex-col">
         <TranscriptPanel
           segments={segments}
           activeIndex={activeIndex}

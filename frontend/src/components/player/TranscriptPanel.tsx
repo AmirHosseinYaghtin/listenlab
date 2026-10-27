@@ -68,6 +68,8 @@ interface TranscriptPanelProps {
 }
 
 const USER_SCROLL_LOCK_MS = 3500
+// breathing room above the active line
+const TOP_MARGIN_PX = 8
 
 export default function TranscriptPanel({
   segments,
@@ -90,11 +92,17 @@ export default function TranscriptPanel({
     const mark = () => {
       lastUserScrollAt.current = Date.now()
     }
+    // pointerdown directly on the container = grabbing the scrollbar
+    const markScrollbar = (e: PointerEvent) => {
+      if (e.target === el) mark()
+    }
     el.addEventListener('wheel', mark, { passive: true })
-    el.addEventListener('touchstart', mark, { passive: true })
+    el.addEventListener('touchmove', mark, { passive: true })
+    el.addEventListener('pointerdown', markScrollbar, { passive: true })
     return () => {
       el.removeEventListener('wheel', mark)
-      el.removeEventListener('touchstart', mark)
+      el.removeEventListener('touchmove', mark)
+      el.removeEventListener('pointerdown', markScrollbar)
     }
   }, [])
 
@@ -103,16 +111,22 @@ export default function TranscriptPanel({
     itemRefs.current.length = segments.length
   }, [segments.length])
 
-  // keep the active sentence visible
+  // keep the active line pinned near the top of the transcript box
   useEffect(() => {
     if (activeIndex < 0) return
     if (Date.now() - lastUserScrollAt.current < USER_SCROLL_LOCK_MS) return
     const container = scrollRef.current
     const item = itemRefs.current[activeIndex]
     if (!container || !item) return
-    const target =
-      item.offsetTop - container.clientHeight / 2 + item.clientHeight / 2
-    container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
+    // measure with bounding rects so it works regardless of offsetParent
+    const offset =
+      item.getBoundingClientRect().top - container.getBoundingClientRect().top
+    // glide for normal line-to-line steps, jump instantly after a big seek
+    const far = Math.abs(offset) > container.clientHeight * 1.5
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop + offset - TOP_MARGIN_PX),
+      behavior: far ? 'auto' : 'smooth',
+    })
   }, [activeIndex])
 
   const vocabHitCount = new Set(
@@ -138,7 +152,6 @@ export default function TranscriptPanel({
       <div
         ref={scrollRef}
         className="transcript-scroll min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5"
-        style={{ scrollBehavior: 'smooth' }}
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5" role="list">
           {segments.map((segment, i) => {
@@ -152,7 +165,10 @@ export default function TranscriptPanel({
                 }}
                 role="listitem"
                 aria-current={active ? 'true' : undefined}
-                onClick={() => onSeekSegment(segment)}
+                onClick={() => {
+                  lastUserScrollAt.current = 0
+                  onSeekSegment(segment)
+                }}
                 className={`group w-full cursor-pointer rounded-lg border px-4 py-3 text-left transition-colors ${
                   active
                     ? 'border-brand-200 bg-brand-50/80 shadow-sm'

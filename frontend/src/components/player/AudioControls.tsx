@@ -43,7 +43,7 @@ export default function AudioControls({
   const scrubMax = duration > 0 ? duration : 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {/* seek bar */}
       <div className="flex items-center gap-3">
         <span className="w-12 shrink-0 text-right font-mono text-xs tabular-nums text-slate-500">
